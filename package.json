@@ -1,0 +1,22 @@
+{
+  "name": "vie-markdown",
+  "displayName": "vie-markdown",
+  "description": "Dịch file Markdown Anh → Việt bằng Gemini, giữ nguyên định dạng.",
+  "version": "0.0.1",
+  "publisher": "local",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "main": "./out/extension.js",
+  "scripts": {
+    "build": "tsc -p .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/vscode": "^1.90.0",
+    "@vscode/vsce": "^4.1.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.5"
+  }
+}

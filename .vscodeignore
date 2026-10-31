@@ -1,0 +1,8 @@
+src/**
+test/**
+docs/**
+.superpowers/**
+.git/**
+tsconfig.json
+vitest.config.ts
+**/*.map
