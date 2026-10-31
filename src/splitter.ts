@@ -1,6 +1,7 @@
+import { FenceTracker } from "./fence";
+
 export const MAX_CHUNK_CHARS = 30000;
 
-const FENCE = /^\s{0,3}(```|~~~)/;
 const HEADING = /^#{1,6}\s/;
 const BLANK = /^\s*$/;
 
@@ -12,13 +13,13 @@ function toLines(text: string): string[] {
 function splitSections(lines: string[]): string[] {
   const sections: string[] = [];
   let current = "";
-  let inFence = false;
+  const fence = new FenceTracker();
   for (const line of lines) {
-    if (!inFence && HEADING.test(line) && current !== "") {
+    if (!fence.inFence && HEADING.test(line) && current !== "") {
       sections.push(current);
       current = "";
     }
-    if (FENCE.test(line)) inFence = !inFence;
+    fence.feed(line);
     current += line;
   }
   if (current !== "") sections.push(current);
@@ -29,11 +30,11 @@ function splitSections(lines: string[]): string[] {
 function splitAtBlankLines(section: string): string[] {
   const pieces: string[] = [];
   let current = "";
-  let inFence = false;
+  const fence = new FenceTracker();
   for (const line of toLines(section)) {
-    if (FENCE.test(line)) inFence = !inFence;
+    fence.feed(line);
     current += line;
-    if (!inFence && BLANK.test(line)) {
+    if (!fence.inFence && BLANK.test(line)) {
       pieces.push(current);
       current = "";
     }

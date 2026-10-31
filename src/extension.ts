@@ -50,20 +50,23 @@ async function translateActiveMarkdown(context: vscode.ExtensionContext): Promis
       title: "vie-markdown: đang dịch",
       cancellable: true,
     },
-    (progress, token) =>
-      translateDocument(source, {
+    (progress, token) => {
+      const controller = new AbortController();
+      token.onCancellationRequested(() => controller.abort());
+      return translateDocument(source, {
         maxChars: MAX_CHUNK_CHARS,
         isCancelled: () => token.isCancellationRequested,
         onProgress: (done, total) => progress.report({ message: `phần ${done}/${total}` }),
         translate: async (chunk) => {
           try {
-            return await translateChunk(chunk, { apiKey, model, systemPrompt });
+            return await translateChunk(chunk, { apiKey, model, systemPrompt, signal: controller.signal });
           } catch (e) {
             if (e instanceof TranslationError && e.kind === "auth") authFailed = true;
             throw e;
           }
         },
-      }),
+      });
+    },
   );
 
   if (authFailed) await context.secrets.delete(KEY_SECRET);

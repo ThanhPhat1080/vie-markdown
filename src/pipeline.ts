@@ -31,6 +31,9 @@ export async function translateDocument(
     try {
       translated.push((await deps.translate(chunk)).trimEnd());
     } catch (e) {
+      if (deps.isCancelled?.()) {
+        return { text: translated.join("\n\n"), warnings: [], completed: false };
+      }
       return {
         text: translated.join("\n\n"),
         warnings: [],

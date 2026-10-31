@@ -1,4 +1,5 @@
-const FENCE = /^\s{0,3}(```|~~~)/;
+import { FenceTracker } from "./fence";
+
 const HEADING = /^#{1,6}\s/;
 const TITLE_LINE = /^\*Title: .+\*$/;
 const LINK = /!?\[[^\]]*\]\([^)]*\)/g;
@@ -12,15 +13,14 @@ interface Counts {
 
 function count(text: string): Counts {
   const counts: Counts = { headings: 0, codeBlocks: 0, links: 0, titleLines: 0 };
-  let inFence = false;
+  const fence = new FenceTracker();
   for (const raw of text.split("\n")) {
     const line = raw.replace(/\r$/, "");
-    if (FENCE.test(line)) {
-      if (!inFence) counts.codeBlocks++;
-      inFence = !inFence;
+    if (fence.feed(line)) {
+      if (fence.inFence) counts.codeBlocks++;
       continue;
     }
-    if (inFence) continue;
+    if (fence.inFence) continue;
     if (HEADING.test(line)) counts.headings++;
     if (TITLE_LINE.test(line)) counts.titleLines++;
     counts.links += line.match(LINK)?.length ?? 0;

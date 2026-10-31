@@ -1,4 +1,4 @@
-export type TranslationErrorKind = "auth" | "rate_limit" | "network" | "empty" | "other";
+export type TranslationErrorKind = "auth" | "rate_limit" | "network" | "empty" | "cancelled" | "other";
 
 export class TranslationError extends Error {
   constructor(
@@ -16,13 +16,32 @@ export interface TranslatorOptions {
   systemPrompt: string;
   fetchFn?: typeof fetch;
   sleep?: (ms: number) => Promise<void>;
+  signal?: AbortSignal;
 }
 
-const RETRY_DELAYS_MS = [2000, 4000, 8000];
+export const RETRY_DELAYS_MS = [2000, 4000, 8000];
 
-const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+export const REQUEST_TIMEOUT_MS = 120_000;
 
-function stripOuterMarkdownFence(text: string): string {
+export const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+const cancelled = () => new TranslationError("Đã hủy.", "cancelled");
+
+function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve();
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(cancelled());
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
+export function stripOuterMarkdownFence(text: string): string {
   const lines = text.trim().split("\n");
   if (lines.length >= 2 && /^```(markdown|md)\s*$/.test(lines[0]) && lines[lines.length - 1].trim() === "```") {
     return lines.slice(1, -1).join("\n").trimEnd();
@@ -32,23 +51,35 @@ function stripOuterMarkdownFence(text: string): string {
 
 export async function translateChunk(text: string, opts: TranslatorOptions): Promise<string> {
   const fetchFn = opts.fetchFn ?? fetch;
-  const sleep = opts.sleep ?? defaultSleep;
+  const sleep = opts.sleep ?? ((ms: number) => abortableSleep(ms, opts.signal));
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${opts.model}:generateContent`;
-  const init: RequestInit = {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": opts.apiKey },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: opts.systemPrompt }] },
-      contents: [{ role: "user", parts: [{ text }] }],
-    }),
+  const body = JSON.stringify({
+    systemInstruction: { parts: [{ text: opts.systemPrompt }] },
+    contents: [{ role: "user", parts: [{ text }] }],
+  });
+
+  const toError = (e: unknown): TranslationError => {
+    if (opts.signal?.aborted) return cancelled();
+    if (e instanceof Error && e.name === "TimeoutError") {
+      return new TranslationError("Quá thời gian chờ phản hồi từ Gemini.", "network");
+    }
+    return new TranslationError(`Lỗi mạng: ${e instanceof Error ? e.message : String(e)}`, "network");
   };
 
   for (let attempt = 0; ; attempt++) {
+    if (opts.signal?.aborted) throw cancelled();
+    const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+    const init: RequestInit = {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": opts.apiKey },
+      body,
+      signal: opts.signal ? AbortSignal.any([opts.signal, timeout]) : timeout,
+    };
     let res: Response;
     try {
       res = await fetchFn(url, init);
     } catch (e) {
-      throw new TranslationError(`Lỗi mạng: ${e instanceof Error ? e.message : String(e)}`, "network");
+      throw toError(e);
     }
 
     if (res.status === 429) {
@@ -59,7 +90,12 @@ export async function translateChunk(text: string, opts: TranslatorOptions): Pro
       continue;
     }
 
-    const bodyText = await res.text();
+    let bodyText: string;
+    try {
+      bodyText = await res.text();
+    } catch (e) {
+      throw toError(e);
+    }
     if (res.status === 401 || res.status === 403 || (res.status === 400 && /api key/i.test(bodyText))) {
       throw new TranslationError("API key không hợp lệ hoặc không có quyền.", "auth");
     }
