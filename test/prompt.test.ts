@@ -43,6 +43,13 @@ describe("buildPrompt", () => {
     expect(prompt).toContain("Claude must follow this exactly");
   });
 
+  it("says only heading lines keep their English original; every other line is replaced by its translation", () => {
+    const prompt = buildPrompt([]);
+    expect(prompt).toContain("CHỈ áp dụng cho dòng tiêu đề");
+    expect(prompt).toContain("thay thế hoàn toàn bằng bản dịch");
+    expect(prompt).toContain("không giữ lại bản gốc");
+  });
+
   it("deduplicates terms case-insensitively", () => {
     const prompt = buildPrompt(["API", "api", ""]);
     const line = prompt.split("\n").find((l) => l.startsWith("Thuật ngữ giữ nguyên:"))!;

@@ -35,7 +35,7 @@ export function buildPrompt(extraKeepTerms: string[]): string {
     "2. Giữ nguyên riêng từng thuật ngữ kỹ thuật tiếng Anh trong danh sách ở cuối, nhưng vẫn dịch phần còn lại của câu chứa chúng.",
     "3. Chỉ những thứ sau được giữ nguyên, không dịch, không sửa: code block (kể cả comment bên trong), inline code, URL, đường dẫn file, front-matter YAML, HTML tag. Câu văn xung quanh chúng vẫn phải dịch.",
     "4. Giữ nguyên mọi cú pháp Markdown: bảng, danh sách, checkbox, link, ảnh, in đậm, in nghiêng, trích dẫn, đường kẻ ngang, số dòng trống.",
-    "5. Với mỗi tiêu đề dùng dấu #: giữ nguyên dòng tiêu đề tiếng Anh gốc, rồi ngay dòng kế tiếp viết bản dịch tiêu đề dạng in nghiêng theo mẫu *Title: <bản dịch>*. Nội dung bên dưới tiêu đề vẫn phải được dịch đầy đủ.",
+    "5. Với mỗi tiêu đề dùng dấu #: giữ nguyên dòng tiêu đề tiếng Anh gốc, rồi ngay dòng kế tiếp viết bản dịch tiêu đề dạng in nghiêng theo mẫu *Title: <bản dịch>*. Việc giữ lại bản gốc này CHỈ áp dụng cho dòng tiêu đề. Mọi dòng khác (đoạn văn, danh sách, bảng, trích dẫn...) được thay thế hoàn toàn bằng bản dịch: không giữ lại bản gốc tiếng Anh, không viết song ngữ.",
     "   Ví dụ, đầu vào:",
     "   ## Installation",
     "   Run the command below.",
