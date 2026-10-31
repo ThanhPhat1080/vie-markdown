@@ -84,6 +84,15 @@ describe("translateChunk", () => {
     expect(err.kind).toBe("auth");
   });
 
+  it("404 error names the model and points to the vieMarkdown.model setting", async () => {
+    const fetchFn = vi.fn(async () => status(404));
+    const err = await translateChunk("x", opts(fetchFn as unknown as typeof fetch)).catch((e) => e);
+    expect(err).toBeInstanceOf(TranslationError);
+    expect(err.message).toContain("gemini-test");
+    expect(err.message).toContain("vieMarkdown.model");
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+  });
+
   it('empty candidates (safety block) throws kind "empty"', async () => {
     const fetchFn = vi.fn(async () => new Response(JSON.stringify({ candidates: [] }), { status: 200 }));
     const err = await translateChunk("x", opts(fetchFn as unknown as typeof fetch)).catch((e) => e);

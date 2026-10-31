@@ -30,7 +30,7 @@ Mỗi tiêu đề `#` giữ dòng tiếng Anh gốc, ngay dưới là bản dị
 | Setting | Ý nghĩa | Mặc định |
 |---|---|---|
 | `vieMarkdown.keepTerms` | Danh sách từ giữ nguyên tiếng Anh, không dịch | `[]` |
-| `vieMarkdown.model` | Tên model Gemini | `gemini-2.5-flash` |
+| `vieMarkdown.model` | Tên model Gemini | `gemini-3.8-flash` |
 
 ## Quyền riêng tư
 

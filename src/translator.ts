@@ -99,6 +99,12 @@ export async function translateChunk(text: string, opts: TranslatorOptions): Pro
     if (res.status === 401 || res.status === 403 || (res.status === 400 && /api key/i.test(bodyText))) {
       throw new TranslationError("API key không hợp lệ hoặc không có quyền.", "auth");
     }
+    if (res.status === 404) {
+      throw new TranslationError(
+        `Model "${opts.model}" không tồn tại hoặc tài khoản không được dùng (404). Hãy đổi setting vieMarkdown.model sang model còn hiệu lực, ví dụ gemini-3.8-flash.`,
+        "other",
+      );
+    }
     if (!res.ok) {
       throw new TranslationError(`Gemini trả về lỗi ${res.status}.`, "other");
     }
