@@ -51,7 +51,13 @@ async function main(): Promise<void> {
   }
   if (!args.file) return fail("Cách dùng: node out/debug.js <file.md> [--dry] [--model NAME] [--out FILE] | --list-models");
 
-  const source = readFileSync(args.file, "utf8");
+  let source = readFileSync(args.file, "utf8");
+  if (args.limit && source.length > args.limit) {
+    // cut at a line boundary so the sample stays valid Markdown
+    const cut = source.lastIndexOf("\n", args.limit);
+    source = source.slice(0, cut > 0 ? cut + 1 : args.limit);
+    log(`--limit ${args.limit}: chỉ dịch ${source.length} ký tự đầu để thử nhanh`);
+  }
   const chunks = splitMarkdown(source, MAX_CHUNK_CHARS);
   const systemPrompt = buildPrompt([]);
   log(`File: ${args.file} (${source.length} ký tự, ${source.split("\n").length} dòng)`);
