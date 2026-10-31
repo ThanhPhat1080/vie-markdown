@@ -7,10 +7,54 @@
   "engines": {
     "vscode": "^1.90.0"
   },
+  "categories": [
+    "Other"
+  ],
   "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vieMarkdown.translate",
+        "title": "vie-markdown: Dịch file Markdown sang tiếng Việt",
+        "shortTitle": "VIE"
+      },
+      {
+        "command": "vieMarkdown.setApiKey",
+        "title": "vie-markdown: Đặt API key Gemini"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "vieMarkdown.translate",
+          "when": "resourceLangId == markdown",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "vie-markdown",
+      "properties": {
+        "vieMarkdown.keepTerms": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Các từ/cụm từ giữ nguyên tiếng Anh, không dịch (thêm vào danh sách mặc định)."
+        },
+        "vieMarkdown.model": {
+          "type": "string",
+          "default": "gemini-2.5-flash",
+          "description": "Tên model Gemini dùng để dịch."
+        }
+      }
+    }
+  },
   "scripts": {
     "build": "tsc -p .",
-    "test": "vitest run"
+    "test": "vitest run",
+    "package": "vsce package --allow-missing-repository --skip-license"
   },
   "devDependencies": {
     "@types/node": "^22.20.5",
