@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { extractGenerateModels, parseDebugArgs } from "../src/debug-helpers";
 
 describe("parseDebugArgs", () => {
-  it("defaults to model gemini-3.8-flash, no flags", () => {
+  it("defaults to model gemini-3.5-flash-lite, no flags", () => {
     expect(parseDebugArgs(["a.md"])).toEqual({
       file: "a.md",
-      model: "gemini-3.8-flash",
+      model: "gemini-3.5-flash-lite",
       listModels: false,
       dry: false,
     });

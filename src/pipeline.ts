@@ -1,4 +1,6 @@
 import { splitMarkdown } from "./splitter";
+import { TranslationError, TranslationErrorKind } from "./translator";
+import { findUntranslatedParagraphs } from "./untranslated";
 import { validateTranslation } from "./validator";
 
 export interface PipelineDeps {
@@ -13,6 +15,15 @@ export interface PipelineResult {
   warnings: string[];
   completed: boolean;
   error?: string;
+  errorKind?: TranslationErrorKind;
+  errorDetail?: string;
+  httpStatus?: number;
+  /** 1-based index of the chunk that failed. */
+  failedChunk?: number;
+  translatedChunks: number;
+  totalChunks: number;
+  /** English prose lines still present unchanged in a completed translation. */
+  untranslated: string[];
 }
 
 export async function translateDocument(
@@ -20,11 +31,24 @@ export async function translateDocument(
   deps: PipelineDeps,
 ): Promise<PipelineResult> {
   if (source.trim() === "") {
-    return { text: "", warnings: [], completed: false, error: "File trống" };
+    return {
+      text: "",
+      warnings: [],
+      completed: false,
+      error: "File trống",
+      translatedChunks: 0,
+      totalChunks: 0,
+      untranslated: [],
+    };
   }
 
   const chunks = splitMarkdown(source, deps.maxChars);
   const translated: string[] = [];
+  const progress = () => ({
+    text: translated.join("\n\n"),
+    translatedChunks: translated.length,
+    totalChunks: chunks.length,
+  });
 
   for (const chunk of chunks) {
     if (deps.isCancelled?.()) break;
@@ -32,23 +56,30 @@ export async function translateDocument(
       translated.push((await deps.translate(chunk)).trimEnd());
     } catch (e) {
       if (deps.isCancelled?.()) {
-        return { text: translated.join("\n\n"), warnings: [], completed: false };
+        return { ...progress(), warnings: [], completed: false, untranslated: [] };
       }
+      const typed = e instanceof TranslationError ? e : undefined;
       return {
-        text: translated.join("\n\n"),
+        ...progress(),
         warnings: [],
         completed: false,
+        untranslated: [],
         error: e instanceof Error ? e.message : String(e),
+        errorKind: typed?.kind,
+        errorDetail: typed?.detail,
+        httpStatus: typed?.httpStatus,
+        failedChunk: translated.length + 1,
       };
     }
     deps.onProgress?.(translated.length, chunks.length);
   }
 
-  const text = translated.join("\n\n");
   const completed = translated.length === chunks.length;
+  const text = translated.join("\n\n");
   return {
-    text,
+    ...progress(),
     warnings: completed ? validateTranslation(source, text) : [],
     completed,
+    untranslated: completed ? findUntranslatedParagraphs(source, text) : [],
   };
 }

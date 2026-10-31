@@ -8,7 +8,7 @@ export interface DebugArgs {
 }
 
 export function parseDebugArgs(argv: string[]): DebugArgs {
-  const args: DebugArgs = { model: "gemini-3.8-flash", listModels: false, dry: false };
+  const args: DebugArgs = { model: "gemini-3.5-flash-lite", listModels: false, dry: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "--model") args.model = argv[++i];

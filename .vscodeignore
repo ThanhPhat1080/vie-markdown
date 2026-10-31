@@ -11,3 +11,5 @@ out/debug-helpers.js
 icon.svg
 scripts/**
 markdown.mock*.md
+.gitignore
+vitest.config.mts
