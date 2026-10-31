@@ -4,6 +4,7 @@
   "description": "Dịch file Markdown Anh → Việt bằng Gemini, giữ nguyên định dạng.",
   "version": "0.0.1",
   "publisher": "local",
+  "icon": "icon.png",
   "engines": {
     "vscode": "^1.90.0"
   },
@@ -45,7 +46,7 @@
         },
         "vieMarkdown.model": {
           "type": "string",
-          "default": "gemini-3.8-flash",
+          "default": "gemini-3.5-flash-lite",
           "description": "Tên model Gemini dùng để dịch."
         }
       }

@@ -101,7 +101,7 @@ export async function translateChunk(text: string, opts: TranslatorOptions): Pro
     }
     if (res.status === 404) {
       throw new TranslationError(
-        `Model "${opts.model}" không tồn tại hoặc tài khoản không được dùng (404). Hãy đổi setting vieMarkdown.model sang model còn hiệu lực, ví dụ gemini-3.8-flash.`,
+        `Model "${opts.model}" không tồn tại hoặc tài khoản không được dùng (404). Hãy đổi setting vieMarkdown.model sang model còn hiệu lực, ví dụ gemini-3.5-flash-lite.`,
         "other",
       );
     }

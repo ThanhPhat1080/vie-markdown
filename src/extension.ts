@@ -40,7 +40,7 @@ async function translateActiveMarkdown(context: vscode.ExtensionContext): Promis
   if (!apiKey) return;
 
   const config = vscode.workspace.getConfiguration("vieMarkdown");
-  const model = config.get<string>("model", "gemini-3.8-flash");
+  const model = config.get<string>("model", "gemini-3.5-flash-lite");
   const systemPrompt = buildPrompt(config.get<string[]>("keepTerms", []));
 
   let authFailed = false;

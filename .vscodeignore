@@ -8,3 +8,6 @@ vitest.config.ts
 **/*.map
 out/debug.js
 out/debug-helpers.js
+icon.svg
+scripts/**
+markdown.mock*.md
