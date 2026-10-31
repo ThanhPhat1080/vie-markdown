@@ -6,3 +6,5 @@ docs/**
 tsconfig.json
 vitest.config.ts
 **/*.map
+out/debug.js
+out/debug-helpers.js
