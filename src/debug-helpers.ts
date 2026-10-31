@@ -4,6 +4,7 @@ export interface DebugArgs {
   listModels: boolean;
   dry: boolean;
   out?: string;
+  limit?: number;
 }
 
 export function parseDebugArgs(argv: string[]): DebugArgs {
@@ -12,6 +13,7 @@ export function parseDebugArgs(argv: string[]): DebugArgs {
     const a = argv[i];
     if (a === "--model") args.model = argv[++i];
     else if (a === "--out") args.out = argv[++i];
+    else if (a === "--limit") args.limit = Number(argv[++i]);
     else if (a === "--list-models") args.listModels = true;
     else if (a === "--dry") args.dry = true;
     else if (!a.startsWith("--") && args.file === undefined) args.file = a;

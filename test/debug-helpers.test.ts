@@ -18,6 +18,11 @@ describe("parseDebugArgs", () => {
     expect(parseDebugArgs(["--list-models"]).listModels).toBe(true);
   });
 
+  it("reads --limit as a number of characters", () => {
+    expect(parseDebugArgs(["a.md", "--limit", "600"]).limit).toBe(600);
+    expect(parseDebugArgs(["a.md"]).limit).toBeUndefined();
+  });
+
   it("reads --out", () => {
     expect(parseDebugArgs(["a.md", "--out", "b.md"]).out).toBe("b.md");
   });
