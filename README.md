@@ -76,15 +76,3 @@ Mỗi lần bấm **VIE**, một danh sách hiện ra để bạn chọn model d
 Extension không tự đổi provider khi lỗi; nếu một provider hết hạn mức hay quá chậm, chạy lại và chọn provider kia.
 
 Timeout tự tăng theo độ dài đoạn (Gemini 90 giây + 5 ms/ký tự, tối đa 5 phút; Groq 45 giây + 5 ms/ký tự). Với Groq, đoạn dài được chia thành phần ≤ 4000 ký tự để không vượt giới hạn token/phút của gói free, và không chờ quá 20 giây khi bị giới hạn tốc độ.
-
-## Thử thủ công trước khi publish (đọc key từ `.env`)
-
-1. Tạo file `.env` ở thư mục gốc repo (đã nằm trong `.gitignore` và `.vscodeignore`):
-   ```
-   GEMINI_API_KEY=...
-   GROQ_API_KEY=...
-   ```
-2. Mở repo trong VS Code, nhấn `F5` (cấu hình "Run Extension (đọc key từ .env)").
-3. Trong cửa sổ Extension Development Host, mở một file `.md` và bấm **VIE**.
-
-`.env` chỉ được đọc ở chế độ phát triển (F5). Trong đó key ưu tiên hơn setting. Bản cài từ `.vsix` không đọc `.env`.
