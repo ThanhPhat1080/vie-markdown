@@ -1,14 +1,45 @@
-# vie-markdown
+# VIE-markdown 🇻🇳
 
-Dịch file Markdown từ tiếng Anh sang tiếng Việt ngay trong VS Code, dùng Google Gemini. Giữ nguyên định dạng Markdown, code block và thuật ngữ kỹ thuật.
+**AI gen ra 47 file Markdown trong một buổi chiều. Bạn đọc chưa hết file đầu thì file thứ 12 đã đẻ thêm 3 file con.**
 
-## Cài đặt
+Đã ruk còn toàn tiếng Anh. Đọc đến đoạn thứ ba là đầu óc bắt đầu mụ dần, có khi gật đầu bừa rồi giật mình: *"Ủa, nãy mình mới approve cái gì vậy?"*. Dễ bị AI "chơi" ghia! 😵‍💫
+
+Trình English chưa tự tin thì dễ bị AI "chơi" lắm bạn ơi. **Ruk, đọc doc bằng tiếng mẹ đẻ đi cho khỏe.**
+
+### Giải pháp: cái extension này
+
+Bấm **VIE** → file Markdown biến thành tiếng Việt, code block, link, bảng vẫn y nguyên. Xong. Không drama.
+
+
+
+- 🆓 **Cần API key free.** Gemini hoặc Groq đều có gói miễn phí, tự đi xin (link ở dưới), 2 phút là xong. (Nhớ free nó sẽ share cho nhà cung cấp AI, dùng cẩn thận nhé! 🫡)
+- 💸 Bạn muốn dùng key đã nạp VIP cho sang, cho bảo mật hơn thì... **chuyện của bạn**, author không phán xét or xin ké.
+- 🧠 Dịch xong nhớ đọc lại, đừng tin AI mù quáng. Nhưng ít nhất lúc này bạn *đọc hiểu* thứ nó viết.
+
+### 🍜 Vângg, author cũng cần được chăm 🥹
+
+Tool này sinh ra để mình **thoát khỏi chính cái app này**: dịch đỡ mệt rồi đi rèn en-lịt cho đàng hoàng, ngày nào đó không cần extension nữa.
+Nên ae, bạn bè xã hội, nếu thấy xài ngon thì **nuôi mình một bữa** để mình có sức học eng nhé T.T
+
+<p align="center">
+  <img src="docs/momo-qr.jpg" alt="MoMo QR nuôi author" width="260">
+  <br><sub>Quét MoMo, only 10k thôi. Cảm ơn ae nhiều, hứa học en-lịt chăm hơn 🫡</sub>
+</p>
+
+---
+
+Dịch file Markdown từ tiếng Anh sang tiếng Việt ngay trong VS Code, dùng Gemini hoặc Groq. Giữ nguyên định dạng Markdown, code block và thuật ngữ kỹ thuật.
+
+## Cài đặt (dễ hơn nấu mì gói)
 
 ```bash
 code --install-extension vie-markdown-0.0.1.vsix
 ```
+## ⚠️ Quyền riêng tư
 
-## Lấy API key (miễn phí)
+Nội dung file được gửi tới provider bạn chọn 🥹🥹(Google Gemini hoặc Groq) để dịch. Với gói miễn phí của Google, dữ liệu có thể được dùng để cải thiện sản phẩm. Đừng dịch file chứa thông tin nhạy cảm (mật khẩu, key, hợp đồng... AI không cần biết).
+
+## Lấy API key (miễn phí, đừng lo, chưa ai đòi 💵)
 
 - Gemini: https://aistudio.google.com/apikey
 - Groq: https://console.groq.com/keys
@@ -22,6 +53,10 @@ Nhập key ở một trong hai nơi:
 
 ## Cách dùng
 
+<p align="center">
+  <img src="docs/vie-button.png" alt="Nút VIE nằm ở góc trên bên phải thanh tiêu đề editor" width="720">
+</p>
+
 Mở một file `.md`, rồi:
 
 - bấm nút **VIE** trên thanh tiêu đề của editor (góc trên bên phải), hoặc
@@ -31,16 +66,13 @@ Bản dịch mở trong một tab Markdown mới bên cạnh. Bạn sửa tay đ
 
 Mỗi tiêu đề `#` giữ dòng tiếng Anh gốc, ngay dưới là bản dịch dạng `*Title: ...*` để dễ tìm lại bản gốc.
 
-## Cài đặt (Settings)
+## Chỉnh cho vừa ý (Settings)
 
 | Setting | Ý nghĩa | Mặc định |
 |---|---|---|
 | `vieMarkdown.keepTerms` | Danh sách từ giữ nguyên tiếng Anh, không dịch | `[]` |
 | `vieMarkdown.model` | Tên model Gemini | `gemini-3.5-flash-lite` |
 
-## Quyền riêng tư
-
-Nội dung file được gửi tới Google Gemini để dịch. Với gói miễn phí, Google có thể dùng dữ liệu để cải thiện sản phẩm. Đừng dịch file chứa thông tin nhạy cảm.
 
 ## Giới hạn của gói miễn phí
 
