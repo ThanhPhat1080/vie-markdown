@@ -120,3 +120,13 @@ describe("translateChunk", () => {
     expect(await translateChunk("x", opts(fetchFn as unknown as typeof fetch))).toBe(text);
   });
 });
+
+import { REQUEST_TIMEOUT_MS, requestTimeoutMs } from "../src/translator";
+
+describe("requestTimeoutMs", () => {
+  it("grows with chunk length and is capped at 5 minutes", () => {
+    expect(requestTimeoutMs(0)).toBe(REQUEST_TIMEOUT_MS);
+    expect(requestTimeoutMs(10_000)).toBeGreaterThan(requestTimeoutMs(1_000));
+    expect(requestTimeoutMs(1_000_000)).toBe(300_000);
+  });
+});

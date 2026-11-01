@@ -1,6 +1,11 @@
 import type { PipelineResult } from "./pipeline";
 
-export type NotificationAction = "enterKey" | "openModelSetting" | "openLog";
+export type NotificationAction =
+  | "enterKey"
+  | "enterGroqKey"
+  | "openModelSetting"
+  | "openGroqModelSetting"
+  | "openLog";
 
 export interface Notification {
   level: "error" | "warning" | "info";
@@ -10,6 +15,8 @@ export interface Notification {
 
 export interface OutcomeContext {
   model: string;
+  /** Model used when the error came from Groq; falls back to `model`. */
+  groqModel?: string;
 }
 
 const MAX_SNIPPETS = 3;
@@ -19,6 +26,7 @@ const MAX_DETAIL_CHARS = 200;
 const snippet = (p: string) => (p.length > SNIPPET_CHARS ? `${p.slice(0, SNIPPET_CHARS).trimEnd()}…` : p);
 
 function errorHeadline(r: PipelineResult, model: string): string {
+  const service = r.errorProvider === "groq" ? "Groq" : "Gemini";
   const part = r.failedChunk ? `phần ${r.failedChunk}` : "một phần";
   switch (r.errorKind) {
     case "auth":
@@ -28,40 +36,45 @@ function errorHeadline(r: PipelineResult, model: string): string {
     case "rate_limit":
       return "Đã hết hạn mức của gói free (429) dù đã thử lại 3 lần. Hãy chờ vài phút rồi chạy lại, hoặc đổi model.";
     case "server_error":
-      return `Gemini đang quá tải hoặc lỗi tạm thời (HTTP ${r.httpStatus ?? "5xx"}) dù đã thử lại 3 lần. Hãy thử lại sau ít phút.`;
+      return `${service} đang quá tải hoặc lỗi tạm thời (HTTP ${r.httpStatus ?? "5xx"}) dù đã thử lại 3 lần. Hãy thử lại sau ít phút.`;
+    case "timeout":
+      return "Model phản hồi quá chậm (quá thời gian chờ). Hãy thử lại, hoặc dùng model nhẹ hơn/Groq.";
     case "network":
-      return "Không kết nối được tới Gemini hoặc quá thời gian chờ. Kiểm tra mạng/VPN, hoặc thử model nhẹ hơn.";
+      return `Không kết nối được tới ${service} hoặc quá thời gian chờ. Kiểm tra mạng/VPN, hoặc thử model nhẹ hơn.`;
     case "blocked":
-      return `Gemini từ chối dịch ${part} do bộ lọc an toàn.`;
+      return `${service} từ chối dịch ${part} do bộ lọc an toàn.`;
     case "truncated":
       return `Bản dịch ${part} bị cắt vì vượt giới hạn độ dài đầu ra.`;
     case "empty":
-      return `Gemini không trả về nội dung cho ${part}.`;
+      return `${service} không trả về nội dung cho ${part}.`;
     default:
       return r.error ?? "Lỗi không xác định.";
   }
 }
 
-function errorActions(kind: PipelineResult["errorKind"]): NotificationAction[] {
+function errorActions(kind: PipelineResult["errorKind"], provider: PipelineResult["errorProvider"]): NotificationAction[] {
+  const groq = provider === "groq";
   switch (kind) {
     case "auth":
-      return ["enterKey"];
+      return [groq ? "enterGroqKey" : "enterKey"];
     case "model_not_found":
+      return [groq ? "openGroqModelSetting" : "openModelSetting", "openLog"];
     case "rate_limit":
+    case "timeout":
     case "network":
-      return ["openModelSetting", "openLog"];
+      return [groq ? "openGroqModelSetting" : "openModelSetting", "openLog"];
     default:
       return ["openLog"];
   }
 }
 
 function describeError(r: PipelineResult, ctx: OutcomeContext): Notification {
-  let message = errorHeadline(r, ctx.model);
-  if (r.errorDetail) message += ` Chi tiết từ Google: ${r.errorDetail.slice(0, MAX_DETAIL_CHARS)}`;
+  let message = errorHeadline(r, r.errorProvider === "groq" ? (ctx.groqModel ?? ctx.model) : ctx.model);
+  if (r.errorDetail) message += ` Chi tiết từ ${r.errorProvider === "groq" ? "Groq" : "Google"}: ${r.errorDetail.slice(0, MAX_DETAIL_CHARS)}`;
   if (r.text !== "" && r.translatedChunks > 0) {
     message += ` Đã dịch ${r.translatedChunks}/${r.totalChunks} phần (lỗi ở phần ${r.failedChunk}); bản dịch một phần nằm trong tab mới.`;
   }
-  return { level: "error", message, actions: errorActions(r.errorKind) };
+  return { level: "error", message, actions: errorActions(r.errorKind, r.errorProvider) };
 }
 
 /** Everything the user should be told after a run, as notifications ready to show. */
@@ -107,7 +120,7 @@ export function describeForLog(r: PipelineResult): string[] {
   if (r.error) {
     lines.push(`LỖI [${r.errorKind ?? "unknown"}] ${r.error}`);
     if (r.httpStatus !== undefined) lines.push(`  HTTP ${r.httpStatus}`);
-    if (r.errorDetail) lines.push(`  Chi tiết từ Google: ${r.errorDetail}`);
+    if (r.errorDetail) lines.push(`  Chi tiết từ ${r.errorProvider === "groq" ? "Groq" : "Google"}: ${r.errorDetail}`);
     if (r.failedChunk !== undefined) lines.push(`  Lỗi ở phần ${r.failedChunk}.`);
   }
   for (const w of r.warnings) lines.push(`CẢNH BÁO định dạng: ${w}`);

@@ -1,16 +1,21 @@
 /**
  * Debug CLI (not part of the extension). Build with `npm run build`, then:
  *   node out/debug.js markdown.mock.md --dry
- *   GEMINI_API_KEY=... node out/debug.js --list-models
- *   GEMINI_API_KEY=... node out/debug.js markdown.mock.md [--model NAME] [--out FILE]
- * The key is read from the environment only and never printed.
+ *   node out/debug.js --list-models [--provider gemini|groq]
+ *   node out/debug.js markdown.mock.md [--provider gemini|groq] [--model NAME] [--limit N] [--out FILE]
+ * Keys come from the environment or a .env in the current directory
+ * (GEMINI_API_KEY / GROQ_API_KEY); they are never printed.
  */
-import { readFileSync, writeFileSync } from "node:fs";
-import { extractGenerateModels, parseDebugArgs } from "./debug-helpers";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { dotenvKey, parseDotenv } from "./dotenv";
+import { extractGenerateModels, extractGroqChatModels, parseDebugArgs } from "./debug-helpers";
+import { DEFAULT_GROQ_MODEL, translateChunkGroq } from "./groq";
 import { translateDocument } from "./pipeline";
 import { buildPrompt } from "./prompt";
 import { MAX_CHUNK_CHARS, splitMarkdown } from "./splitter";
 import { translateChunk } from "./translator";
+
+const DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite";
 
 const BASE = "https://generativelanguage.googleapis.com/v1beta";
 
@@ -32,9 +37,27 @@ async function listModels(apiKey: string): Promise<void> {
   log("\nĐặt một trong các tên trên vào setting vieMarkdown.model (ưu tiên dòng có 'flash').");
 }
 
+async function listGroqModels(apiKey: string): Promise<void> {
+  const url = "https://api.groq.com/openai/v1/models";
+  log(`GET ${url}`);
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${apiKey}` } });
+  const text = await res.text();
+  log(`→ HTTP ${res.status}`);
+  if (!res.ok) {
+    log(text.slice(0, 800));
+    process.exitCode = 1;
+    return;
+  }
+  const names = extractGroqChatModels(JSON.parse(text));
+  log(`Key này dùng được ${names.length} model chat trên Groq:`);
+  for (const n of names) log(`  ${n}`);
+  log("\nThử: node out/debug.js <file.md> --provider groq --model <tên> --limit 1500");
+  log("Đặt tên chọn vào setting vieMarkdown.groqModel (ưu tiên model nhỏ như 8b, instant, scout, 20b).");
+}
+
 const loggingFetch: typeof fetch = async (input, init) => {
   const started = Date.now();
-  log(`POST ${String(input)}`);
+  log(`POST ${String(input).replace(/\?.*$/, "")}`);
   const res = await fetch(input, init);
   log(`→ HTTP ${res.status} (${Date.now() - started} ms)`);
   if (!res.ok) log(`  body: ${(await res.clone().text()).slice(0, 800)}`);
@@ -43,13 +66,16 @@ const loggingFetch: typeof fetch = async (input, init) => {
 
 async function main(): Promise<void> {
   const args = parseDebugArgs(process.argv.slice(2));
-  const apiKey = process.env.GEMINI_API_KEY;
+  const dotenv = existsSync(".env") ? parseDotenv(readFileSync(".env", "utf8")) : {};
+  const keyName = args.provider === "groq" ? "GROQ_API_KEY" : "GEMINI_API_KEY";
+  const apiKey = process.env[keyName]?.trim() || dotenvKey(args.provider, dotenv);
+  const model = args.model ?? (args.provider === "groq" ? DEFAULT_GROQ_MODEL : DEFAULT_GEMINI_MODEL);
 
   if (args.listModels) {
-    if (!apiKey) return fail("Thiếu biến môi trường GEMINI_API_KEY.");
-    return listModels(apiKey);
+    if (!apiKey) return fail(`Thiếu ${keyName} (biến môi trường hoặc .env).`);
+    return args.provider === "groq" ? listGroqModels(apiKey) : listModels(apiKey);
   }
-  if (!args.file) return fail("Cách dùng: node out/debug.js <file.md> [--dry] [--model NAME] [--out FILE] | --list-models");
+  if (!args.file) return fail("Cách dùng: node out/debug.js <file.md> [--dry] [--provider gemini|groq] [--model NAME] [--limit N] [--out FILE] | --list-models");
 
   let source = readFileSync(args.file, "utf8");
   if (args.limit && source.length > args.limit) {
@@ -62,20 +88,21 @@ async function main(): Promise<void> {
   const systemPrompt = buildPrompt([]);
   log(`File: ${args.file} (${source.length} ký tự, ${source.split("\n").length} dòng)`);
   log(`Cắt thành ${chunks.length} phần: ${chunks.map((c) => c.length).join(", ")} ký tự`);
-  log(`Model: ${args.model} | prompt hệ thống: ${systemPrompt.length} ký tự`);
+  log(`Provider: ${args.provider} | Model: ${model} | prompt hệ thống: ${systemPrompt.length} ký tự`);
 
   if (args.dry) {
     log("\n--dry: không gọi mạng. Prompt hệ thống:\n");
     log(systemPrompt);
     return;
   }
-  if (!apiKey) return fail("Thiếu biến môi trường GEMINI_API_KEY (hoặc dùng --dry).");
+  if (!apiKey) return fail(`Thiếu ${keyName} (biến môi trường hoặc .env; hoặc dùng --dry).`);
 
+  const translateOne = args.provider === "groq" ? translateChunkGroq : translateChunk;
   const result = await translateDocument(source, {
     maxChars: MAX_CHUNK_CHARS,
     onProgress: (done, total) => log(`Xong phần ${done}/${total}`),
     translate: (chunk) =>
-      translateChunk(chunk, { apiKey, model: args.model, systemPrompt, fetchFn: loggingFetch }),
+      translateOne(chunk, { apiKey, model, systemPrompt, fetchFn: loggingFetch }),
   });
 
   const out = args.out ?? args.file.replace(/\.md$/i, "") + ".vi.md";

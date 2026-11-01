@@ -10,9 +10,15 @@ code --install-extension vie-markdown-0.0.1.vsix
 
 ## Lấy API key (miễn phí)
 
-1. Vào https://aistudio.google.com/apikey và tạo key bằng tài khoản Google của bạn.
-2. Lần đầu chạy lệnh dịch, extension sẽ hỏi key. Key được lưu bằng `SecretStorage` của VS Code, không nằm trong settings.json.
-3. Đổi key sau này: `Ctrl+Shift+P` → `vie-markdown: Đặt API key Gemini`.
+- Gemini: https://aistudio.google.com/apikey
+- Groq: https://console.groq.com/keys
+
+Nhập key ở một trong hai nơi:
+
+1. Settings (`Ctrl+,` → gõ `vieMarkdown`): ô `vieMarkdown.geminiApiKey` và `vieMarkdown.groqApiKey`. Key lưu chữ thường trong settings.json, nên đặt ở User settings và không commit.
+2. Hoặc để extension hỏi khi bạn chọn provider chưa có key; key nhập ở hộp thoại được ghi vào setting tương ứng.
+
+Đổi key bằng lệnh `vie-markdown: Đặt API key Gemini` hoặc `vie-markdown: Đặt API key Groq`.
 
 ## Cách dùng
 
@@ -62,3 +68,23 @@ Sau khi dịch xong, extension còn cảnh báo:
 - **Đoạn chưa dịch**: câu tiếng Anh dài (từ 40 ký tự, từ 6 từ trở lên) còn nguyên trong bản dịch; thông báo trích vài câu đầu để bạn kiểm tra và dịch bổ sung.
 
 Bấm **Xem chi tiết** để mở kênh Output `vie-markdown`: log từng request (model, mã HTTP, thời gian), danh sách đầy đủ các đoạn chưa dịch và lý do lỗi. API key không bao giờ được ghi vào log.
+
+## Chọn model
+
+Mỗi lần bấm **VIE**, một danh sách hiện ra để bạn chọn model dịch, ví dụ `Gemini · gemini-3.5-flash-lite` hoặc `Groq · qwen/qwen3.8-27b`. Lần chọn trước được xếp lên đầu. Đổi tên model bằng setting `vieMarkdown.model` (Gemini) và `vieMarkdown.groqModel` (Groq).
+
+Extension không tự đổi provider khi lỗi; nếu một provider hết hạn mức hay quá chậm, chạy lại và chọn provider kia.
+
+Timeout tự tăng theo độ dài đoạn (Gemini 90 giây + 5 ms/ký tự, tối đa 5 phút; Groq 45 giây + 5 ms/ký tự). Với Groq, đoạn dài được chia thành phần ≤ 4000 ký tự để không vượt giới hạn token/phút của gói free, và không chờ quá 20 giây khi bị giới hạn tốc độ.
+
+## Thử thủ công trước khi publish (đọc key từ `.env`)
+
+1. Tạo file `.env` ở thư mục gốc repo (đã nằm trong `.gitignore` và `.vscodeignore`):
+   ```
+   GEMINI_API_KEY=...
+   GROQ_API_KEY=...
+   ```
+2. Mở repo trong VS Code, nhấn `F5` (cấu hình "Run Extension (đọc key từ .env)").
+3. Trong cửa sổ Extension Development Host, mở một file `.md` và bấm **VIE**.
+
+`.env` chỉ được đọc ở chế độ phát triển (F5). Trong đó key ưu tiên hơn setting. Bản cài từ `.vsix` không đọc `.env`.

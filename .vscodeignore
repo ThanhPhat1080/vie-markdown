@@ -13,3 +13,5 @@ scripts/**
 markdown.mock*.md
 .gitignore
 vitest.config.mts
+.env
+.env.*

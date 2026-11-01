@@ -1,5 +1,5 @@
 import { splitMarkdown } from "./splitter";
-import { TranslationError, TranslationErrorKind } from "./translator";
+import { Provider, TranslationError, TranslationErrorKind } from "./translator";
 import { findUntranslatedParagraphs } from "./untranslated";
 import { validateTranslation } from "./validator";
 
@@ -17,6 +17,8 @@ export interface PipelineResult {
   error?: string;
   errorKind?: TranslationErrorKind;
   errorDetail?: string;
+  /** Service that raised the error. */
+  errorProvider?: Provider;
   httpStatus?: number;
   /** 1-based index of the chunk that failed. */
   failedChunk?: number;
@@ -67,6 +69,7 @@ export async function translateDocument(
         error: e instanceof Error ? e.message : String(e),
         errorKind: typed?.kind,
         errorDetail: typed?.detail,
+        errorProvider: typed?.provider,
         httpStatus: typed?.httpStatus,
         failedChunk: translated.length + 1,
       };

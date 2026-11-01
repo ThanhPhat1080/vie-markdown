@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { extractGenerateModels, parseDebugArgs } from "../src/debug-helpers";
+import { extractGenerateModels, extractGroqChatModels, parseDebugArgs } from "../src/debug-helpers";
 
 describe("parseDebugArgs", () => {
-  it("defaults to model gemini-3.5-flash-lite, no flags", () => {
+  it("defaults to provider gemini with no model override, no flags", () => {
     expect(parseDebugArgs(["a.md"])).toEqual({
       file: "a.md",
-      model: "gemini-3.5-flash-lite",
+      provider: "gemini",
       listModels: false,
       dry: false,
     });
@@ -43,5 +43,32 @@ describe("extractGenerateModels", () => {
   it("returns [] for an unexpected body", () => {
     expect(extractGenerateModels({})).toEqual([]);
     expect(extractGenerateModels(null)).toEqual([]);
+  });
+});
+
+describe("parseDebugArgs --provider", () => {
+  it("accepts groq", () => {
+    expect(parseDebugArgs(["a.md", "--provider", "groq"]).provider).toBe("groq");
+  });
+  it("rejects unknown providers", () => {
+    expect(() => parseDebugArgs(["--provider", "x"])).toThrow(/gemini hoặc groq/);
+  });
+});
+
+describe("extractGroqChatModels", () => {
+  it("keeps active chat models, drops speech/safety ones, sorts", () => {
+    const body = {
+      data: [
+        { id: "z-chat", active: true },
+        { id: "whisper-large-v3", active: true },
+        { id: "a-chat" },
+        { id: "old-chat", active: false },
+        { id: "some-guard-model", active: true },
+      ],
+    };
+    expect(extractGroqChatModels(body)).toEqual(["a-chat", "z-chat"]);
+  });
+  it("returns [] for an unexpected body", () => {
+    expect(extractGroqChatModels(null)).toEqual([]);
   });
 });

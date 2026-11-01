@@ -162,3 +162,24 @@ describe("describeForLog", () => {
     expect(lines).toContain("Số link/ảnh lệch");
   });
 });
+
+describe("describeOutcome: errors from Groq", () => {
+  const groqCtx = { model: "gemini-test", groqModel: "llama-test" };
+  const groqFailed = (over: Partial<PipelineResult>) =>
+    describeOutcome(result({ error: "x", failedChunk: 1, errorProvider: "groq", ...over }), groqCtx)[0];
+
+  it("auth: offers the Groq key, not the Gemini one", () => {
+    expect(groqFailed({ errorKind: "auth" }).actions).toEqual(["enterGroqKey"]);
+  });
+
+  it("model_not_found: names the Groq model and opens the Groq setting", () => {
+    const n = groqFailed({ errorKind: "model_not_found" });
+    expect(n.message).toContain("llama-test");
+    expect(n.actions).toEqual(["openGroqModelSetting", "openLog"]);
+  });
+
+  it("empty and server_error: name Groq instead of Gemini", () => {
+    expect(groqFailed({ errorKind: "empty" }).message).toContain("Groq");
+    expect(groqFailed({ errorKind: "server_error" }).message).not.toContain("Gemini");
+  });
+});

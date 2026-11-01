@@ -1,7 +1,7 @@
 {
   "name": "vie-markdown",
   "displayName": "vie-markdown",
-  "description": "Dịch file Markdown Anh → Việt bằng Gemini, giữ nguyên định dạng.",
+  "description": "Dịch file Markdown Anh → Việt bằng Gemini hoặc Groq, giữ nguyên định dạng.",
   "version": "0.0.1",
   "publisher": "local",
   "icon": "icon.png",
@@ -22,6 +22,10 @@
       {
         "command": "vieMarkdown.setApiKey",
         "title": "vie-markdown: Đặt API key Gemini"
+      },
+      {
+        "command": "vieMarkdown.setGroqApiKey",
+        "title": "vie-markdown: Đặt API key Groq"
       }
     ],
     "menus": {
@@ -48,6 +52,21 @@
           "type": "string",
           "default": "gemini-3.5-flash-lite",
           "description": "Tên model Gemini dùng để dịch."
+        },
+        "vieMarkdown.groqModel": {
+          "type": "string",
+          "default": "qwen/qwen3.8-27b",
+          "description": "Tên model Groq (miễn phí, nhanh) hiện trong danh sách chọn khi dịch."
+        },
+        "vieMarkdown.geminiApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key Gemini (lấy miễn phí tại https://aistudio.google.com/apikey). Lưu dạng chữ thường trong settings.json, nên đặt ở User settings và không commit."
+        },
+        "vieMarkdown.groqApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "API key Groq (lấy miễn phí tại https://console.groq.com/keys). Lưu dạng chữ thường trong settings.json, nên đặt ở User settings và không commit."
         }
       }
     }

@@ -3,6 +3,7 @@ export type TranslationErrorKind =
   | "rate_limit"
   | "server_error"
   | "network"
+  | "timeout"
   | "empty"
   | "blocked"
   | "truncated"
@@ -10,7 +11,11 @@ export type TranslationErrorKind =
   | "cancelled"
   | "other";
 
+export type Provider = "gemini" | "groq";
+
 export interface TranslationErrorInfo {
+  /** Which service produced the error; Gemini when omitted. */
+  provider?: Provider;
   httpStatus?: number;
   /** Google's own error message, when the response body had one. */
   detail?: string;
@@ -19,6 +24,7 @@ export interface TranslationErrorInfo {
 }
 
 export class TranslationError extends Error {
+  readonly provider: Provider;
   readonly httpStatus?: number;
   readonly detail?: string;
   readonly retryAfterMs?: number;
@@ -30,6 +36,7 @@ export class TranslationError extends Error {
   ) {
     super(message);
     this.name = "TranslationError";
+    this.provider = info.provider ?? "gemini";
     this.httpStatus = info.httpStatus;
     this.detail = info.detail;
     this.retryAfterMs = info.retryAfterMs;
@@ -47,7 +54,16 @@ export interface TranslatorOptions {
 
 export const RETRY_DELAYS_MS = [2000, 4000, 8000];
 
-export const REQUEST_TIMEOUT_MS = 120_000;
+/** Base wait for a request; long chunks get extra time on top (see requestTimeoutMs). */
+export const REQUEST_TIMEOUT_MS = 90_000;
+
+const TIMEOUT_PER_CHAR_MS = 5;
+const MAX_TIMEOUT_MS = 300_000;
+
+/** Output length tracks input length, so the wait grows with the chunk, up to a 5 minute cap. */
+export function requestTimeoutMs(chars: number, baseMs: number = REQUEST_TIMEOUT_MS): number {
+  return Math.min(baseMs + chars * TIMEOUT_PER_CHAR_MS, MAX_TIMEOUT_MS);
+}
 
 const MAX_RETRY_DELAY_MS = 60_000;
 const RETRYABLE_SERVER_STATUS = new Set([500, 502, 503, 504]);
@@ -61,9 +77,9 @@ const BLOCKING_FINISH_REASONS = new Set([
 
 export const defaultSleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-const cancelled = () => new TranslationError("Đã hủy.", "cancelled");
+export const cancelled = () => new TranslationError("Đã hủy.", "cancelled");
 
-function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
+export function abortableSleep(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise<void>((resolve, reject) => {
     const timer = setTimeout(() => {
       signal?.removeEventListener("abort", onAbort);
@@ -112,14 +128,14 @@ export async function translateChunk(text: string, opts: TranslatorOptions): Pro
   const toError = (e: unknown): TranslationError => {
     if (opts.signal?.aborted) return cancelled();
     if (e instanceof Error && e.name === "TimeoutError") {
-      return new TranslationError("Quá thời gian chờ phản hồi từ Gemini.", "network");
+      return new TranslationError("Quá thời gian chờ phản hồi từ Gemini.", "timeout");
     }
     return new TranslationError(`Lỗi mạng: ${e instanceof Error ? e.message : String(e)}`, "network");
   };
 
   for (let attempt = 0; ; attempt++) {
     if (opts.signal?.aborted) throw cancelled();
-    const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+    const timeout = AbortSignal.timeout(requestTimeoutMs(text.length));
     const init: RequestInit = {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": opts.apiKey },
